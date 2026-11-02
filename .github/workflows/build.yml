@@ -1,4 +1,4 @@
- : Build Coolet APK
+name : Build Coolet APK
 
 on:
   push:
