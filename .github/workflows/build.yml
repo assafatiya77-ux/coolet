@@ -2,6 +2,8 @@ name : Build Coolet APK
 
 on:
   push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -28,10 +30,11 @@ jobs:
           gradle-version: '8.9'
 
       - name: Build APK
-        run: gradle assembleDebug --no-daemon
+        run: gradle lintDebug assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Coolet-APK
+          name: Coolet-APK-0.2
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
