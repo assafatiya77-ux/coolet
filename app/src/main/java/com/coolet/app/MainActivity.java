@@ -19,6 +19,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.util.ArrayList;
@@ -42,6 +44,7 @@ public class MainActivity extends Activity {
     private MediaAdapter adapter;
     private boolean hebrew;
     private boolean busy = true;
+    private int mediaFilter = 0; // 0 all, 1 photos, 2 videos
 
     private String t(String en, String he) { return hebrew ? he : en; }
     private int dp(int value) {
@@ -68,11 +71,14 @@ public class MainActivity extends Activity {
             return insets;
         });
         TextView title = new TextView(this);
-        title.setText("Coolet"); title.setTextSize(30); title.setTextColor(Color.rgb(92, 45, 155));
+        String version;
+        try { version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
+        catch (android.content.pm.PackageManager.NameNotFoundException error) { version = "?"; }
+        title.setText("Coolet Preview · " + version); title.setTextSize(25); title.setTextColor(Color.rgb(92, 45, 155));
         root.addView(title);
         TextView privacy = new TextView(this);
-        privacy.setText(t("Your private photo and video library. Originals stay in place. Keep the original files to keep access.",
-                "ספריית התמונות והסרטונים הפרטית שלך. המקור נשאר במקומו. יש לשמור את קובצי המקור כדי להמשיך לצפות בהם."));
+        privacy.setText(t("Separate test app. Your existing Coolet library stays in the original app. Add media here to test. Original files stay in place.",
+                "אפליקציית בדיקה נפרדת. הספרייה הקיימת נשארת בקולט המקורית. הוסף כאן מדיה לבדיקה. קובצי המקור נשארים במקומם."));
         privacy.setTextSize(14); privacy.setTextColor(Color.DKGRAY);
         root.addView(privacy);
 
@@ -83,7 +89,7 @@ public class MainActivity extends Activity {
         root.addView(add, new LinearLayout.LayoutParams(-1, dp(56)));
         search = new EditText(this);
         search.setSingleLine(true);
-        search.setHint(t("Search file names", "חיפוש לפי שם קובץ"));
+        search.setHint(t("Search names and descriptions", "חיפוש לפי שם קובץ ותיאור"));
         search.setContentDescription(search.getHint());
         search.setSaveEnabled(false);
         root.addView(search, new LinearLayout.LayoutParams(-1, dp(52)));
@@ -92,6 +98,33 @@ public class MainActivity extends Activity {
             public void onTextChanged(CharSequence s, int start, int before, int count) { filter(); }
             public void afterTextChanged(Editable e) {}
         });
+
+        if (state != null) mediaFilter = state.getInt("mediaFilter", 0);
+        if (mediaFilter < 0 || mediaFilter > 2) mediaFilter = 0;
+        RadioGroup types = new RadioGroup(this);
+        types.setOrientation(RadioGroup.HORIZONTAL);
+        String[] labels = {t("All", "הכול"), t("Photos", "תמונות"), t("Videos", "סרטונים")};
+        for (int i = 0; i < labels.length; i++) {
+            RadioButton button = new RadioButton(this);
+            button.setId(View.generateViewId());
+            button.setText(labels[i]);
+            button.setMinHeight(dp(48));
+            types.addView(button, new RadioGroup.LayoutParams(0, -2, 1));
+            if (i == mediaFilter) types.check(button.getId());
+        }
+        types.setOnCheckedChangeListener((group, checkedId) -> {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                if (group.getChildAt(i).getId() == checkedId) mediaFilter = i;
+            }
+            filter();
+        });
+        root.addView(types);
+        TextView help = new TextView(this);
+        help.setText(t("Tap a file name to view. Tap Description to add search words.",
+                "לחץ על שם קובץ לצפייה. לחץ על תיאור להוספת מילים לחיפוש."));
+        help.setTextSize(14);
+        help.setTextColor(Color.DKGRAY);
+        root.addView(help);
 
         status = new TextView(this);
         status.setText(t("Loading library…", "טוען את הספרייה…"));
@@ -102,6 +135,10 @@ public class MainActivity extends Activity {
         adapter = new MediaAdapter();
         list.setAdapter(adapter);
         list.setOnItemClickListener((parent, view, position, id) -> open(visible.get(position)));
+        list.setOnItemLongClickListener((parent, view, position, id) -> {
+            if (!busy) editDescription(visible.get(position));
+            return true;
+        });
         root.addView(list, new LinearLayout.LayoutParams(-1, 0, 1));
         setContentView(root);
         root.requestApplyInsets();
@@ -112,6 +149,7 @@ public class MainActivity extends Activity {
     @Override protected void onSaveInstanceState(Bundle state) {
         super.onSaveInstanceState(state);
         state.putString("query", search.getText().toString());
+        state.putInt("mediaFilter", mediaFilter);
     }
 
     private void load() {
@@ -223,14 +261,75 @@ public class MainActivity extends Activity {
         String query = search.getText().toString().trim().toLowerCase(Locale.ROOT);
         visible.clear();
         for (MediaLibraryStore.Item item : items) {
-            if (item.name.toLowerCase(Locale.ROOT).contains(query)) visible.add(item);
+            boolean matchesType = mediaFilter == 0
+                    || (mediaFilter == 1 && item.mime.startsWith("image/"))
+                    || (mediaFilter == 2 && item.mime.startsWith("video/"));
+            if (matchesType && (item.name.toLowerCase(Locale.ROOT).contains(query)
+                    || item.description.toLowerCase(Locale.ROOT).contains(query))) visible.add(item);
         }
         if (adapter != null) adapter.notifyDataSetChanged();
         if (status == null || busy) return;
         if (items.isEmpty()) status.setText(t("No media yet. Tap Add photos and videos.",
                 "הספרייה ריקה. לחץ על הוספת תמונות וסרטונים."));
-        else if (visible.isEmpty()) status.setText(t("No matching file names.", "לא נמצאו שמות קבצים תואמים."));
+        else if (visible.isEmpty()) status.setText(t("No media matches these filters.", "לא נמצאה מדיה שמתאימה לסינון ולחיפוש."));
         else status.setText(t("Shown: ", "מוצגים: ") + visible.size() + t(" of ", " מתוך ") + items.size());
+    }
+
+    private void editDescription(MediaLibraryStore.Item item) {
+        EditText input = new EditText(this);
+        input.setHint(t("Example: Family trip, music, tomatoes", "לדוגמה: טיול משפחתי, מוזיקה, עגבניות"));
+        input.setText(item.description);
+        input.setMinLines(2);
+        input.setMaxLines(5);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+                | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        input.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(1000)});
+        LinearLayout panel = new LinearLayout(this);
+        panel.setPadding(dp(20), dp(8), dp(20), 0);
+        panel.setLayoutDirection(hebrew ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+        panel.addView(input, new LinearLayout.LayoutParams(-1, -2));
+        new AlertDialog.Builder(this)
+                .setTitle(t("Personal description", "תיאור אישי"))
+                .setView(panel)
+                .setNegativeButton(t("Cancel", "ביטול"), null)
+                .setPositiveButton(t("Save", "שמירה"), (dialog, which) ->
+                        saveDescription(item.uri, input.getText().toString().trim()))
+                .show();
+    }
+
+    private void saveDescription(Uri uri, String description) {
+        if (busy) return;
+        busy = true; add.setEnabled(false);
+        status.setText(t("Saving description…", "שומר את התיאור…"));
+        IO.execute(() -> {
+            try {
+                List<MediaLibraryStore.Item> saved = store.read();
+                boolean found = false;
+                for (int i = 0; i < saved.size(); i++) {
+                    MediaLibraryStore.Item item = saved.get(i);
+                    if (item.uri.equals(uri)) {
+                        saved.set(i, new MediaLibraryStore.Item(item.uri, item.name, item.mime, description));
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) throw new IllegalStateException("Item no longer in catalog");
+                store.write(saved);
+                runOnUiThread(() -> {
+                    if (isDestroyed()) return;
+                    items.clear(); items.addAll(saved);
+                    busy = false; add.setEnabled(true); filter();
+                    message(t("Description saved", "התיאור נשמר"));
+                });
+            } catch (Exception error) {
+                runOnUiThread(() -> {
+                    if (isDestroyed()) return;
+                    busy = false; add.setEnabled(true); filter();
+                    message(t("Could not save description. Please try again.", "שמירת התיאור נכשלה. נסה שוב."));
+                });
+            }
+        });
     }
 
     private void open(MediaLibraryStore.Item item) {
@@ -253,13 +352,32 @@ public class MainActivity extends Activity {
         public Object getItem(int position) { return visible.get(position); }
         public long getItemId(int position) { return position; }
         public View getView(int position, View convert, ViewGroup parent) {
-            TextView row = convert instanceof TextView ? (TextView) convert : new TextView(MainActivity.this);
             MediaLibraryStore.Item item = visible.get(position);
-            row.setText((item.mime.startsWith("video/") ? t("Video", "סרטון") : t("Photo", "תמונה"))
-                    + "\n" + item.name);
-            row.setTextSize(17); row.setTextColor(Color.BLACK);
-            row.setPadding(dp(12), dp(14), dp(12), dp(14));
-            row.setMinHeight(dp(72)); row.setGravity(Gravity.CENTER_VERTICAL);
+            LinearLayout row = new LinearLayout(MainActivity.this);
+            row.setOrientation(LinearLayout.VERTICAL);
+            row.setPadding(dp(12), dp(8), dp(12), dp(8));
+            TextView text = new TextView(MainActivity.this);
+            text.setText((item.mime.startsWith("video/") ? t("Video", "סרטון") : t("Photo", "תמונה"))
+                    + "\n" + item.name
+                    + (item.description.isEmpty() ? "" : "\n" + item.description));
+            text.setTextSize(17); text.setTextColor(Color.BLACK);
+            text.setPadding(0, dp(8), 0, dp(8));
+            text.setMinHeight(dp(64));
+            text.setOnClickListener(v -> open(item));
+            text.setOnLongClickListener(v -> {
+                if (!busy) editDescription(item);
+                return true;
+            });
+            row.addView(text, new LinearLayout.LayoutParams(-1, -2));
+            Button describe = new Button(MainActivity.this);
+            describe.setText(t("Description", "תיאור"));
+            describe.setContentDescription(t("Edit description: ", "עריכת תיאור: ") + item.name);
+            describe.setMinHeight(dp(48));
+            describe.setEnabled(!busy);
+            describe.setOnClickListener(v -> {
+                if (!busy) editDescription(item);
+            });
+            row.addView(describe, new LinearLayout.LayoutParams(-1, -2));
             return row;
         }
     }
