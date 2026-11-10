@@ -1,4 +1,5 @@
 import hashlib
+import os
 import json
 from pathlib import Path
 import re
@@ -8,7 +9,8 @@ import xml.etree.ElementTree as ET
 
 OUT = Path("runtime-evidence")
 OUT.mkdir(exist_ok=True)
-APK = Path("dist/Coolet-Preview-0.2.3.apk")
+APK = Path(os.environ.get("COOLET_TEST_APK", "dist/Coolet-Preview-0.2.3.apk"))
+SOURCE_BUILD = "COOLET_TEST_APK" in os.environ
 PACKAGE = "com.coolet.app.preview"
 ACTIVITY = PACKAGE + "/com.coolet.app.MainActivity"
 report = []
@@ -31,8 +33,18 @@ def find_text(root, text):
         return exact
     return next((n for n in root.iter("node") if text.casefold() in n.attrib.get("text", "").casefold()), None)
 
+def wait_for(name, predicate, timeout=20):
+    deadline = time.monotonic() + timeout
+    while True:
+        root = capture(name)
+        if predicate(root):
+            return root
+        if time.monotonic() >= deadline:
+            raise AssertionError("Timed out waiting for " + name)
+        time.sleep(0.5)
+
 def click_text(text):
-    root = capture("before-tap")
+    root = wait_for("before-tap", lambda root: find_text(root, text) is not None)
     node = find_text(root, text)
     assert node is not None, "Missing UI text: " + text
     x1, y1, x2, y2 = map(int, re.findall(r"\d+", node.attrib["bounds"]))
@@ -54,7 +66,7 @@ def tap_node(node):
 
 def import_file(name):
     click_text("Add photos and videos")
-    root = capture("import-picker")
+    root = wait_for("import-picker", lambda root: any("documentsui" in n.attrib.get("package", "") for n in root.iter("node")))
     if find_text(root, name) is None:
         menu = next((n for n in root.iter("node") if n.attrib.get("content-desc") == "Show roots"), None)
         if menu is not None:
@@ -80,15 +92,17 @@ def edit_search(value, previous=""):
     if previous:
         adb("shell", "input", "keyevent", "123")
         for _ in previous:
-            adb("shell", "input", "keyevent", "112")
+            adb("shell", "input", "keyevent", "67")
     if value:
         adb("shell", "input", "text", value)
     adb("shell", "input", "keyevent", "4")
     time.sleep(1)
 
 try:
-    assert hashlib.sha256(APK.read_bytes()).hexdigest() == "df7b7c2f83e0c7b4ef778eed20455905b4ff84cf6ea13a0bd898cfe168916b46"
-    report.append("Exact distributed APK SHA256 verified")
+    digest = hashlib.sha256(APK.read_bytes()).hexdigest()
+    if not SOURCE_BUILD:
+        assert digest == "df7b7c2f83e0c7b4ef778eed20455905b4ff84cf6ea13a0bd898cfe168916b46"
+    report.append(("Current source test APK SHA256: " if SOURCE_BUILD else "Distributed APK SHA256: ") + digest)
     result = adb("install", str(APK))
     assert "Success" in result, result
     report.append("Signed APK installed on Android 15 emulator")
@@ -104,7 +118,7 @@ try:
         assert node is not None and node.attrib.get("checked") == "true"
     report.append("All / Photos / Videos controls respond and show checked state")
     click_text("Add photos and videos")
-    root = capture("picker")
+    root = wait_for("picker", lambda root: any("documentsui" in n.attrib.get("package", "") for n in root.iter("node")))
     assert any("documentsui" in n.attrib.get("package", "") for n in root.iter("node")), "Document picker did not appear"
     adb("shell", "input", "keyevent", "4")
     time.sleep(1)
@@ -153,7 +167,25 @@ try:
     assert find_text(root, "Shown: 1 of 2") is not None
     assert find_text(root, "coolet-smoke.png") is not None
     report.append("Manual description saved and found through description search")
-    edit_search("", "field-test")
+    if SOURCE_BUILD:
+        edit_search("test%sfield", "field-test")
+        root = capture("reordered-keywords")
+        assert find_text(root, "Shown: 1 of 2") is not None
+        assert find_text(root, "coolet-smoke.png") is not None
+        edit_search("png%sfield", "test field")
+        root = capture("cross-field-keywords")
+        assert find_text(root, "Shown: 1 of 2") is not None
+        click_text("Videos")
+        root = capture("search-and-type-filter")
+        assert find_text(root, "No media matches") is not None
+        click_text("All")
+        edit_search("missing%sfield", "png field")
+        root = capture("all-terms-required")
+        assert find_text(root, "No media matches") is not None
+        edit_search("", "missing field")
+        report.append("Reordered and cross-field keywords, missing term exclusion and video filter passed")
+    else:
+        edit_search("", "field-test")
     adb("shell", "am", "force-stop", PACKAGE)
     root = launch()
     assert find_text(root, "Shown: 2 of 2") is not None
@@ -197,3 +229,4 @@ try:
 finally:
     (OUT / "logcat.txt").write_text(adb("logcat", "-d", "-t", "1000"))
     (OUT / "completed-checks.json").write_text(json.dumps(report, indent=2))
+
