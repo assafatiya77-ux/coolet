@@ -163,6 +163,9 @@ try:
         click_text("Photos" if label == "image" else "Videos")
         click_text(media)
         root = capture(label + "-open")
+        if find_text(root, "Got it") is not None:
+            click_text("Got it")
+            root = capture(label + "-fullscreen-confirmed")
         packages = {n.attrib.get("package") for n in root.iter("node")}
         if "com.google.android.apps.photos" not in packages:
             assert packages.intersection({"android", "com.android.intentresolver"}), "Neither chooser nor viewer appeared"
