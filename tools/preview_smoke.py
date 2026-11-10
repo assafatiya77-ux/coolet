@@ -160,6 +160,7 @@ try:
     assert find_text(root, "field-test") is not None
     report.append("Imported catalog and manual description persisted after force-stop")
     for media, label in (("coolet-smoke.png", "image"), ("coolet-smoke.mp4", "video")):
+        click_text("Photos" if label == "image" else "Videos")
         click_text(media)
         root = capture(label + "-open")
         packages = {n.attrib.get("package") for n in root.iter("node")}
