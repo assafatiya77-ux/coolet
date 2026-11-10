@@ -162,9 +162,21 @@ try:
     for media, label in (("coolet-smoke.png", "image"), ("coolet-smoke.mp4", "video")):
         click_text(media)
         root = capture(label + "-open")
-        # Android always displays a chooser because Coolet uses createChooser.
-        assert any(n.attrib.get("package") in ("android", "com.android.intentresolver") for n in root.iter("node")), "Media chooser missing"
-        report.append(label + " open request displayed Android viewer chooser")
+        packages = {n.attrib.get("package") for n in root.iter("node")}
+        if "com.google.android.apps.photos" not in packages:
+            assert packages.intersection({"android", "com.android.intentresolver"}), "Neither chooser nor viewer appeared"
+            click_text("Photos")
+            root = capture(label + "-viewer-selected")
+            if find_text(root, "Just once") is not None:
+                click_text("Just once")
+            root = capture(label + "-viewer")
+        assert any(n.attrib.get("package") == "com.google.android.apps.photos" for n in root.iter("node")), "Photos viewer did not open"
+        if label == "video":
+            time.sleep(2)
+            capture("video-after-play")
+            (OUT / "video-media-metrics.txt").write_text(adb("shell", "dumpsys", "media.metrics"))
+            (OUT / "video-media-session.txt").write_text(adb("shell", "dumpsys", "media_session"))
+        report.append(label + " opened in Photos; screenshot evidence preserved")
         adb("shell", "input", "keyevent", "4")
         time.sleep(1)
     adb("shell", "am", "force-stop", PACKAGE)
@@ -176,7 +188,7 @@ try:
     launch()
     report.append("Reinstallation of exact same signed APK succeeded")
     (OUT / "result.json").write_text(json.dumps({"passed": True, "checks": report,
-        "limits": ["External viewer rendering/video playback, Hebrew input/layout, large batches, permission revocation and physical phone validation remain unverified"]}, indent=2))
+        "limits": ["Video playback metrics/screenshots require inspection; Hebrew input/layout, large batches, permission revocation and physical phone validation remain outside this run"]}, indent=2))
     print("\n".join(report))
 finally:
     (OUT / "logcat.txt").write_text(adb("logcat", "-d", "-t", "1000"))
