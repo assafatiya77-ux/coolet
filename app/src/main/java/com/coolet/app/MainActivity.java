@@ -19,6 +19,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.util.ArrayList;
@@ -42,6 +44,7 @@ public class MainActivity extends Activity {
     private MediaAdapter adapter;
     private boolean hebrew;
     private boolean busy = true;
+    private int mediaFilter = 0; // 0 all, 1 photos, 2 videos
 
     private String t(String en, String he) { return hebrew ? he : en; }
     private int dp(int value) {
@@ -93,6 +96,27 @@ public class MainActivity extends Activity {
             public void afterTextChanged(Editable e) {}
         });
 
+        if (state != null) mediaFilter = state.getInt("mediaFilter", 0);
+        if (mediaFilter < 0 || mediaFilter > 2) mediaFilter = 0;
+        RadioGroup types = new RadioGroup(this);
+        types.setOrientation(RadioGroup.HORIZONTAL);
+        String[] labels = {t("All", "הכול"), t("Photos", "תמונות"), t("Videos", "סרטונים")};
+        for (int i = 0; i < labels.length; i++) {
+            RadioButton button = new RadioButton(this);
+            button.setId(View.generateViewId());
+            button.setText(labels[i]);
+            button.setMinHeight(dp(48));
+            types.addView(button, new RadioGroup.LayoutParams(0, -2, 1));
+            if (i == mediaFilter) types.check(button.getId());
+        }
+        types.setOnCheckedChangeListener((group, checkedId) -> {
+            for (int i = 0; i < group.getChildCount(); i++) {
+                if (group.getChildAt(i).getId() == checkedId) mediaFilter = i;
+            }
+            filter();
+        });
+        root.addView(types);
+
         status = new TextView(this);
         status.setText(t("Loading library…", "טוען את הספרייה…"));
         status.setPadding(0, dp(8), 0, dp(8));
@@ -112,6 +136,7 @@ public class MainActivity extends Activity {
     @Override protected void onSaveInstanceState(Bundle state) {
         super.onSaveInstanceState(state);
         state.putString("query", search.getText().toString());
+        state.putInt("mediaFilter", mediaFilter);
     }
 
     private void load() {
@@ -223,13 +248,16 @@ public class MainActivity extends Activity {
         String query = search.getText().toString().trim().toLowerCase(Locale.ROOT);
         visible.clear();
         for (MediaLibraryStore.Item item : items) {
-            if (item.name.toLowerCase(Locale.ROOT).contains(query)) visible.add(item);
+            boolean matchesType = mediaFilter == 0
+                    || (mediaFilter == 1 && item.mime.startsWith("image/"))
+                    || (mediaFilter == 2 && item.mime.startsWith("video/"));
+            if (matchesType && item.name.toLowerCase(Locale.ROOT).contains(query)) visible.add(item);
         }
         if (adapter != null) adapter.notifyDataSetChanged();
         if (status == null || busy) return;
         if (items.isEmpty()) status.setText(t("No media yet. Tap Add photos and videos.",
                 "הספרייה ריקה. לחץ על הוספת תמונות וסרטונים."));
-        else if (visible.isEmpty()) status.setText(t("No matching file names.", "לא נמצאו שמות קבצים תואמים."));
+        else if (visible.isEmpty()) status.setText(t("No media matches these filters.", "לא נמצאה מדיה שמתאימה לסינון ולחיפוש."));
         else status.setText(t("Shown: ", "מוצגים: ") + visible.size() + t(" of ", " מתוך ") + items.size());
     }
 
