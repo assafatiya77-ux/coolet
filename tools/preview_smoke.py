@@ -92,7 +92,7 @@ def edit_search(value, previous=""):
     if previous:
         adb("shell", "input", "keyevent", "123")
         for _ in previous:
-            adb("shell", "input", "keyevent", "112")
+            adb("shell", "input", "keyevent", "67")
     if value:
         adb("shell", "input", "text", value)
     adb("shell", "input", "keyevent", "4")
