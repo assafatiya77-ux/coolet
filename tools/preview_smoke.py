@@ -26,7 +26,10 @@ def capture(name):
     return ET.fromstring(xml)
 
 def find_text(root, text):
-    return next((n for n in root.iter("node") if text in n.attrib.get("text", "")), None)
+    exact = next((n for n in root.iter("node") if text.casefold() == n.attrib.get("text", "").casefold()), None)
+    if exact is not None:
+        return exact
+    return next((n for n in root.iter("node") if text.casefold() in n.attrib.get("text", "").casefold()), None)
 
 def click_text(text):
     root = capture("before-tap")
