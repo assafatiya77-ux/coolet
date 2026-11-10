@@ -33,8 +33,18 @@ def find_text(root, text):
         return exact
     return next((n for n in root.iter("node") if text.casefold() in n.attrib.get("text", "").casefold()), None)
 
+def wait_for(name, predicate, timeout=20):
+    deadline = time.monotonic() + timeout
+    while True:
+        root = capture(name)
+        if predicate(root):
+            return root
+        if time.monotonic() >= deadline:
+            raise AssertionError("Timed out waiting for " + name)
+        time.sleep(0.5)
+
 def click_text(text):
-    root = capture("before-tap")
+    root = wait_for("before-tap", lambda root: find_text(root, text) is not None)
     node = find_text(root, text)
     assert node is not None, "Missing UI text: " + text
     x1, y1, x2, y2 = map(int, re.findall(r"\d+", node.attrib["bounds"]))
@@ -56,7 +66,7 @@ def tap_node(node):
 
 def import_file(name):
     click_text("Add photos and videos")
-    root = capture("import-picker")
+    root = wait_for("import-picker", lambda root: any("documentsui" in n.attrib.get("package", "") for n in root.iter("node")))
     if find_text(root, name) is None:
         menu = next((n for n in root.iter("node") if n.attrib.get("content-desc") == "Show roots"), None)
         if menu is not None:
@@ -108,7 +118,7 @@ try:
         assert node is not None and node.attrib.get("checked") == "true"
     report.append("All / Photos / Videos controls respond and show checked state")
     click_text("Add photos and videos")
-    root = capture("picker")
+    root = wait_for("picker", lambda root: any("documentsui" in n.attrib.get("package", "") for n in root.iter("node")))
     assert any("documentsui" in n.attrib.get("package", "") for n in root.iter("node")), "Document picker did not appear"
     adb("shell", "input", "keyevent", "4")
     time.sleep(1)
