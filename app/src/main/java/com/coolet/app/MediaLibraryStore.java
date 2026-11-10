@@ -17,8 +17,13 @@ final class MediaLibraryStore {
         final Uri uri;
         final String name;
         final String mime;
+        final String description;
         Item(Uri uri, String name, String mime) {
+            this(uri, name, mime, "");
+        }
+        Item(Uri uri, String name, String mime, String description) {
             this.uri = uri; this.name = name; this.mime = mime;
+            this.description = description;
         }
     }
 
@@ -41,7 +46,7 @@ final class MediaLibraryStore {
                     !(mime.startsWith("image/") || mime.startsWith("video/"))) {
                 throw new IllegalStateException("Invalid catalog entry");
             }
-            items.add(new Item(uri, row.getString("name"), mime));
+            items.add(new Item(uri, row.getString("name"), mime, row.optString("description", "")));
         }
         return items;
     }
@@ -53,6 +58,7 @@ final class MediaLibraryStore {
             row.put("uri", item.uri.toString());
             row.put("name", item.name);
             row.put("mime", item.mime);
+            row.put("description", item.description);
             json.put(row);
         }
         FileOutputStream stream = null;

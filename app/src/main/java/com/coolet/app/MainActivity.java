@@ -86,7 +86,7 @@ public class MainActivity extends Activity {
         root.addView(add, new LinearLayout.LayoutParams(-1, dp(56)));
         search = new EditText(this);
         search.setSingleLine(true);
-        search.setHint(t("Search file names", "חיפוש לפי שם קובץ"));
+        search.setHint(t("Search names and descriptions", "חיפוש לפי שם קובץ ותיאור"));
         search.setContentDescription(search.getHint());
         search.setSaveEnabled(false);
         root.addView(search, new LinearLayout.LayoutParams(-1, dp(52)));
@@ -116,6 +116,12 @@ public class MainActivity extends Activity {
             filter();
         });
         root.addView(types);
+        TextView help = new TextView(this);
+        help.setText(t("Hold an item to add a personal description for search.",
+                "לחיצה ארוכה על פריט להוספת תיאור אישי לחיפוש."));
+        help.setTextSize(14);
+        help.setTextColor(Color.DKGRAY);
+        root.addView(help);
 
         status = new TextView(this);
         status.setText(t("Loading library…", "טוען את הספרייה…"));
@@ -126,6 +132,10 @@ public class MainActivity extends Activity {
         adapter = new MediaAdapter();
         list.setAdapter(adapter);
         list.setOnItemClickListener((parent, view, position, id) -> open(visible.get(position)));
+        list.setOnItemLongClickListener((parent, view, position, id) -> {
+            if (!busy) editDescription(visible.get(position));
+            return true;
+        });
         root.addView(list, new LinearLayout.LayoutParams(-1, 0, 1));
         setContentView(root);
         root.requestApplyInsets();
@@ -251,7 +261,8 @@ public class MainActivity extends Activity {
             boolean matchesType = mediaFilter == 0
                     || (mediaFilter == 1 && item.mime.startsWith("image/"))
                     || (mediaFilter == 2 && item.mime.startsWith("video/"));
-            if (matchesType && item.name.toLowerCase(Locale.ROOT).contains(query)) visible.add(item);
+            if (matchesType && (item.name.toLowerCase(Locale.ROOT).contains(query)
+                    || item.description.toLowerCase(Locale.ROOT).contains(query))) visible.add(item);
         }
         if (adapter != null) adapter.notifyDataSetChanged();
         if (status == null || busy) return;
@@ -259,6 +270,63 @@ public class MainActivity extends Activity {
                 "הספרייה ריקה. לחץ על הוספת תמונות וסרטונים."));
         else if (visible.isEmpty()) status.setText(t("No media matches these filters.", "לא נמצאה מדיה שמתאימה לסינון ולחיפוש."));
         else status.setText(t("Shown: ", "מוצגים: ") + visible.size() + t(" of ", " מתוך ") + items.size());
+    }
+
+    private void editDescription(MediaLibraryStore.Item item) {
+        EditText input = new EditText(this);
+        input.setHint(t("Example: Family trip, music, tomatoes", "לדוגמה: טיול משפחתי, מוזיקה, עגבניות"));
+        input.setText(item.description);
+        input.setMinLines(2);
+        input.setMaxLines(5);
+        input.setInputType(android.text.InputType.TYPE_CLASS_TEXT
+                | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                | android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        input.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(1000)});
+        LinearLayout panel = new LinearLayout(this);
+        panel.setPadding(dp(20), dp(8), dp(20), 0);
+        panel.setLayoutDirection(hebrew ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
+        panel.addView(input, new LinearLayout.LayoutParams(-1, -2));
+        new AlertDialog.Builder(this)
+                .setTitle(t("Personal description", "תיאור אישי"))
+                .setView(panel)
+                .setNegativeButton(t("Cancel", "ביטול"), null)
+                .setPositiveButton(t("Save", "שמירה"), (dialog, which) ->
+                        saveDescription(item.uri, input.getText().toString().trim()))
+                .show();
+    }
+
+    private void saveDescription(Uri uri, String description) {
+        if (busy) return;
+        busy = true; add.setEnabled(false);
+        status.setText(t("Saving description…", "שומר את התיאור…"));
+        IO.execute(() -> {
+            try {
+                List<MediaLibraryStore.Item> saved = store.read();
+                boolean found = false;
+                for (int i = 0; i < saved.size(); i++) {
+                    MediaLibraryStore.Item item = saved.get(i);
+                    if (item.uri.equals(uri)) {
+                        saved.set(i, new MediaLibraryStore.Item(item.uri, item.name, item.mime, description));
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) throw new IllegalStateException("Item no longer in catalog");
+                store.write(saved);
+                runOnUiThread(() -> {
+                    if (isDestroyed()) return;
+                    items.clear(); items.addAll(saved);
+                    busy = false; add.setEnabled(true); filter();
+                    message(t("Description saved", "התיאור נשמר"));
+                });
+            } catch (Exception error) {
+                runOnUiThread(() -> {
+                    if (isDestroyed()) return;
+                    busy = false; add.setEnabled(true); filter();
+                    message(t("Could not save description. Please try again.", "שמירת התיאור נכשלה. נסה שוב."));
+                });
+            }
+        });
     }
 
     private void open(MediaLibraryStore.Item item) {
@@ -284,7 +352,8 @@ public class MainActivity extends Activity {
             TextView row = convert instanceof TextView ? (TextView) convert : new TextView(MainActivity.this);
             MediaLibraryStore.Item item = visible.get(position);
             row.setText((item.mime.startsWith("video/") ? t("Video", "סרטון") : t("Photo", "תמונה"))
-                    + "\n" + item.name);
+                    + "\n" + item.name
+                    + (item.description.isEmpty() ? "" : "\n" + item.description));
             row.setTextSize(17); row.setTextColor(Color.BLACK);
             row.setPadding(dp(12), dp(14), dp(12), dp(14));
             row.setMinHeight(dp(72)); row.setGravity(Gravity.CENTER_VERTICAL);
