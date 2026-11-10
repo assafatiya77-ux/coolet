@@ -71,11 +71,14 @@ public class MainActivity extends Activity {
             return insets;
         });
         TextView title = new TextView(this);
-        title.setText("Coolet"); title.setTextSize(30); title.setTextColor(Color.rgb(92, 45, 155));
+        String version;
+        try { version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName; }
+        catch (android.content.pm.PackageManager.NameNotFoundException error) { version = "?"; }
+        title.setText("Coolet Preview · " + version); title.setTextSize(25); title.setTextColor(Color.rgb(92, 45, 155));
         root.addView(title);
         TextView privacy = new TextView(this);
-        privacy.setText(t("Your private photo and video library. Originals stay in place. Keep the original files to keep access.",
-                "ספריית התמונות והסרטונים הפרטית שלך. המקור נשאר במקומו. יש לשמור את קובצי המקור כדי להמשיך לצפות בהם."));
+        privacy.setText(t("Separate test app. Your existing Coolet library stays in the original app. Add media here to test. Original files stay in place.",
+                "אפליקציית בדיקה נפרדת. הספרייה הקיימת נשארת בקולט המקורית. הוסף כאן מדיה לבדיקה. קובצי המקור נשארים במקומם."));
         privacy.setTextSize(14); privacy.setTextColor(Color.DKGRAY);
         root.addView(privacy);
 
@@ -117,8 +120,8 @@ public class MainActivity extends Activity {
         });
         root.addView(types);
         TextView help = new TextView(this);
-        help.setText(t("Hold an item to add a personal description for search.",
-                "לחיצה ארוכה על פריט להוספת תיאור אישי לחיפוש."));
+        help.setText(t("Tap a file name to view. Tap Description to add search words.",
+                "לחץ על שם קובץ לצפייה. לחץ על תיאור להוספת מילים לחיפוש."));
         help.setTextSize(14);
         help.setTextColor(Color.DKGRAY);
         root.addView(help);
@@ -349,14 +352,32 @@ public class MainActivity extends Activity {
         public Object getItem(int position) { return visible.get(position); }
         public long getItemId(int position) { return position; }
         public View getView(int position, View convert, ViewGroup parent) {
-            TextView row = convert instanceof TextView ? (TextView) convert : new TextView(MainActivity.this);
             MediaLibraryStore.Item item = visible.get(position);
-            row.setText((item.mime.startsWith("video/") ? t("Video", "סרטון") : t("Photo", "תמונה"))
+            LinearLayout row = new LinearLayout(MainActivity.this);
+            row.setOrientation(LinearLayout.VERTICAL);
+            row.setPadding(dp(12), dp(8), dp(12), dp(8));
+            TextView text = new TextView(MainActivity.this);
+            text.setText((item.mime.startsWith("video/") ? t("Video", "סרטון") : t("Photo", "תמונה"))
                     + "\n" + item.name
                     + (item.description.isEmpty() ? "" : "\n" + item.description));
-            row.setTextSize(17); row.setTextColor(Color.BLACK);
-            row.setPadding(dp(12), dp(14), dp(12), dp(14));
-            row.setMinHeight(dp(72)); row.setGravity(Gravity.CENTER_VERTICAL);
+            text.setTextSize(17); text.setTextColor(Color.BLACK);
+            text.setPadding(0, dp(8), 0, dp(8));
+            text.setMinHeight(dp(64));
+            text.setOnClickListener(v -> open(item));
+            text.setOnLongClickListener(v -> {
+                if (!busy) editDescription(item);
+                return true;
+            });
+            row.addView(text, new LinearLayout.LayoutParams(-1, -2));
+            Button describe = new Button(MainActivity.this);
+            describe.setText(t("Description", "תיאור"));
+            describe.setContentDescription(t("Edit description: ", "עריכת תיאור: ") + item.name);
+            describe.setMinHeight(dp(48));
+            describe.setEnabled(!busy);
+            describe.setOnClickListener(v -> {
+                if (!busy) editDescription(item);
+            });
+            row.addView(describe, new LinearLayout.LayoutParams(-1, -2));
             return row;
         }
     }
