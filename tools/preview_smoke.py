@@ -1,5 +1,6 @@
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -8,7 +9,7 @@ import xml.etree.ElementTree as ET
 
 OUT = Path("runtime-evidence")
 OUT.mkdir(exist_ok=True)
-APK = Path("dist/Coolet-Preview-0.2.3.apk")
+APK = Path(os.environ.get("COOLET_TEST_APK", "dist/Coolet-Preview-0.2.3.apk"))
 PACKAGE = "com.coolet.app.preview"
 ACTIVITY = PACKAGE + "/com.coolet.app.MainActivity"
 report = []
@@ -87,8 +88,10 @@ def edit_search(value, previous=""):
     time.sleep(1)
 
 try:
-    assert hashlib.sha256(APK.read_bytes()).hexdigest() == "df7b7c2f83e0c7b4ef778eed20455905b4ff84cf6ea13a0bd898cfe168916b46"
-    report.append("Exact distributed APK SHA256 verified")
+    digest = hashlib.sha256(APK.read_bytes()).hexdigest()
+    if "COOLET_TEST_APK" not in os.environ:
+        assert digest == "df7b7c2f83e0c7b4ef778eed20455905b4ff84cf6ea13a0bd898cfe168916b46"
+    report.append("Test APK: " + str(APK) + " SHA256=" + digest)
     result = adb("install", str(APK))
     assert "Success" in result, result
     report.append("Signed APK installed on Android 15 emulator")
@@ -153,7 +156,17 @@ try:
     assert find_text(root, "Shown: 1 of 2") is not None
     assert find_text(root, "coolet-smoke.png") is not None
     report.append("Manual description saved and found through description search")
-    edit_search("", "field-test")
+    edit_search("field-test%spng", "field-test")
+    root = capture("cross-field-search")
+    assert find_text(root, "Shown: 1 of 2") is not None
+    edit_search("png%sfield-test", "field-test png")
+    root = capture("reversed-search")
+    assert find_text(root, "Shown: 1 of 2") is not None
+    edit_search("field-test%sabsent", "png field-test")
+    root = capture("missing-term-search")
+    assert find_text(root, "No media matches") is not None
+    report.append("Cross-field, reversed-order and missing-term search verified")
+    edit_search("", "field-test absent")
     adb("shell", "am", "force-stop", PACKAGE)
     root = launch()
     assert find_text(root, "Shown: 2 of 2") is not None

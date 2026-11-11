@@ -26,7 +26,6 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -212,8 +211,10 @@ public class MainActivity extends Activity {
             for (android.content.UriPermission grant : getContentResolver().getPersistedUriPermissions()) {
                 if (grant.isReadPermission()) existingGrants.add(grant.getUri().toString());
             }
-            int added = 0, skipped = 0, failed = 0;
+            int added = 0, skipped = 0, failed = 0, processed = 0;
             for (Uri uri : selected) {
+                if (processed % 25 == 0) showImportProgress(processed, selected.size(), false);
+                processed++;
                 if (known.contains(uri.toString())) { skipped++; continue; }
                 try {
                     if (!"content".equals(uri.getScheme())) throw new IllegalArgumentException();
@@ -233,6 +234,7 @@ public class MainActivity extends Activity {
                     known.add(uri.toString()); added++;
                 } catch (Exception error) { failed++; }
             }
+            showImportProgress(processed, selected.size(), true);
             store.write(saved);
             String summary = t("Added: ", "נוספו: ") + added
                     + t(" · Already in library: ", " · כבר בספרייה: ") + skipped
@@ -257,15 +259,22 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void showImportProgress(int processed, int total, boolean saving) {
+        runOnUiThread(() -> {
+            if (isDestroyed()) return;
+            status.setText(t("Processed: ", "נבדקו: ") + processed + " / " + total
+                    + (saving ? t(" · Saving library…", " · שומר את הספרייה…") : ""));
+        });
+    }
+
     private void filter() {
-        String query = search.getText().toString().trim().toLowerCase(Locale.ROOT);
+        String[] terms = MediaSearch.terms(search.getText().toString());
         visible.clear();
         for (MediaLibraryStore.Item item : items) {
             boolean matchesType = mediaFilter == 0
                     || (mediaFilter == 1 && item.mime.startsWith("image/"))
                     || (mediaFilter == 2 && item.mime.startsWith("video/"));
-            if (matchesType && (item.name.toLowerCase(Locale.ROOT).contains(query)
-                    || item.description.toLowerCase(Locale.ROOT).contains(query))) visible.add(item);
+            if (matchesType && MediaSearch.matches(item.name, item.description, terms)) visible.add(item);
         }
         if (adapter != null) adapter.notifyDataSetChanged();
         if (status == null || busy) return;

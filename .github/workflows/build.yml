@@ -29,6 +29,12 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Check Hebrew and multilingual search
+        run: |
+          mkdir -p /tmp/coolet-search-tests
+          javac -encoding UTF-8 -d /tmp/coolet-search-tests app/src/main/java/com/coolet/app/MediaSearch.java tools/MediaSearchTest.java
+          java -cp /tmp/coolet-search-tests com.coolet.app.MediaSearchTest
+
       - name: Build APK
         run: gradle lintRelease assembleRelease --no-daemon
 
