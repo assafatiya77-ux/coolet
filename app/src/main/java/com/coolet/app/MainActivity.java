@@ -211,8 +211,10 @@ public class MainActivity extends Activity {
             for (android.content.UriPermission grant : getContentResolver().getPersistedUriPermissions()) {
                 if (grant.isReadPermission()) existingGrants.add(grant.getUri().toString());
             }
-            int added = 0, skipped = 0, failed = 0;
+            int added = 0, skipped = 0, failed = 0, processed = 0;
             for (Uri uri : selected) {
+                if (processed % 25 == 0) showImportProgress(processed, selected.size(), false);
+                processed++;
                 if (known.contains(uri.toString())) { skipped++; continue; }
                 try {
                     if (!"content".equals(uri.getScheme())) throw new IllegalArgumentException();
@@ -232,6 +234,7 @@ public class MainActivity extends Activity {
                     known.add(uri.toString()); added++;
                 } catch (Exception error) { failed++; }
             }
+            showImportProgress(processed, selected.size(), true);
             store.write(saved);
             String summary = t("Added: ", "נוספו: ") + added
                     + t(" · Already in library: ", " · כבר בספרייה: ") + skipped
@@ -254,6 +257,14 @@ public class MainActivity extends Activity {
                 message(t("Could not save the library. Please try again.", "שמירת הספרייה נכשלה. נסה שוב."));
             });
         }
+    }
+
+    private void showImportProgress(int processed, int total, boolean saving) {
+        runOnUiThread(() -> {
+            if (isDestroyed()) return;
+            status.setText(t("Processed: ", "נבדקו: ") + processed + " / " + total
+                    + (saving ? t(" · Saving library…", " · שומר את הספרייה…") : ""));
+        });
     }
 
     private void filter() {
