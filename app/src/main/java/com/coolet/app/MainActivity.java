@@ -26,7 +26,6 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -258,14 +257,13 @@ public class MainActivity extends Activity {
     }
 
     private void filter() {
-        String query = search.getText().toString().trim().toLowerCase(Locale.ROOT);
+        String[] terms = MediaSearch.terms(search.getText().toString());
         visible.clear();
         for (MediaLibraryStore.Item item : items) {
             boolean matchesType = mediaFilter == 0
                     || (mediaFilter == 1 && item.mime.startsWith("image/"))
                     || (mediaFilter == 2 && item.mime.startsWith("video/"));
-            if (matchesType && (item.name.toLowerCase(Locale.ROOT).contains(query)
-                    || item.description.toLowerCase(Locale.ROOT).contains(query))) visible.add(item);
+            if (matchesType && MediaSearch.matches(item.name, item.description, terms)) visible.add(item);
         }
         if (adapter != null) adapter.notifyDataSetChanged();
         if (status == null || busy) return;
