@@ -14,23 +14,29 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build current source for isolated emulator testing
+        run: gradle assembleDebug --no-daemon
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
-      - name: Install and exercise exact signed preview APK
+      - name: Install and exercise current source APK
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
         with:
           api-level: 35
           arch: x86_64
           target: google_apis
           profile: pixel_2
-          script: python3 tools/preview_smoke.py
+          script: COOLET_TEST_APK=app/build/outputs/apk/debug/app-debug.apk python3 tools/preview_smoke.py
       - name: Preserve runtime evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: preview-0.2.3-runtime-evidence
+          name: current-source-runtime-evidence
           path: runtime-evidence/
           if-no-files-found: warn
