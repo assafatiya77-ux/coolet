@@ -26,6 +26,16 @@
         {
           "name": "National Sawdust",
           "address": "80 N 6th St, Brooklyn, NY 11249, USA"
+        },
+        {
+          "name": "Our Wicked Lady",
+          "address": "153 Morgan Ave, Brooklyn, NY 11237, USA",
+          "verification": "candidate; confirm current calendar"
+        },
+        {
+          "name": "Elsewhere",
+          "address": "599 Johnson Ave, Brooklyn, NY 11237, USA",
+          "verification": "candidate; confirm current calendar"
         }
       ]
     },
