@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "city": "New York",
+  "timezone": "America/New_York",
+  "source": "JamBase public concert listings (initial sample; verify before display)",
+  "retrievedForDate": "2026-11-20",
+  "events": [
+    {
+      "artist": "Mason Jennings",
+      "venue": "Cafe Wha?",
+      "localDate": "2026-11-20",
+      "localTime": "18:30"
+    },
+    {
+      "artist": "James Ivy",
+      "venue": "Mercury Lounge",
+      "localDate": "2026-11-20",
+      "localTime": "18:00"
+    },
+    {
+      "artist": "West 22nd",
+      "venue": "Bowery Ballroom",
+      "localDate": "2026-11-20",
+      "localTime": "20:00"
+    },
+    {
+      "artist": "The Pineapple Thief",
+      "venue": "The Gramercy Theatre",
+      "localDate": "2026-11-20",
+      "localTime": "19:00"
+    }
+  ],
+  "integration": {
+    "ticketmaster": "planned; requires developer key",
+    "ticketUrls": "not verified",
+    "autoRefresh": "not implemented",
+    "notes": "Sample data only; never present expired events as upcoming. Validate venue, date, source terms, and ticket URL before publication."
+  }
+}
