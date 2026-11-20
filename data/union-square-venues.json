@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "area": "Union Square and nearby Gramercy / East Village, Manhattan, New York, USA",
+  "venues": [
+    {
+      "name": "Irving Plaza",
+      "address": "17 Irving Pl, New York, NY 10003, USA",
+      "officialCalendar": "https://www.livenation.com/venue/KovZpaFPje/irving-plaza-powered-by-verizon-5g-events",
+      "alreadyInOtherSeed": true
+    },
+    {
+      "name": "Webster Hall",
+      "address": "125 E 11th St, New York, NY 10003, USA",
+      "alreadyInOtherSeed": true
+    },
+    {
+      "name": "The Gramercy Theatre",
+      "address": "127 E 23rd St, New York, NY 10010, USA",
+      "alreadyInOtherSeed": false
+    }
+  ],
+  "exampleEvent": {
+    "artist": "Marky Ramone Plays The Ramones Classics",
+    "venue": "Irving Plaza",
+    "localDate": "2026-11-20",
+    "localTime": "19:00",
+    "source": "https://www.livenation.com/venue/KovZpaFPje/irving-plaza-powered-by-verizon-5g-events",
+    "ticketAvailability": "not checked"
+  },
+  "status": "venue list and example event only; no automated ingestion; deduplicate venues against existing files"
+}
