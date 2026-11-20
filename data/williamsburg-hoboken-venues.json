@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "region": "NYC metro",
+  "timezone": "America/New_York",
+  "areas": [
+    {
+      "id": "williamsburg",
+      "name": "Williamsburg, Brooklyn",
+      "venues": [
+        {
+          "name": "Brooklyn Bowl",
+          "address": "61 Wythe Ave, Brooklyn, NY 11249, USA"
+        },
+        {
+          "name": "Music Hall of Williamsburg",
+          "address": "66 N 6th St, Brooklyn, NY 11211, USA"
+        },
+        {
+          "name": "Baby's All Right",
+          "address": "146 Broadway, Brooklyn, NY 11211, USA"
+        },
+        {
+          "name": "Union Pool",
+          "address": "484 Union Ave, Brooklyn, NY 11211, USA"
+        },
+        {
+          "name": "National Sawdust",
+          "address": "80 N 6th St, Brooklyn, NY 11249, USA"
+        }
+      ]
+    },
+    {
+      "id": "hoboken",
+      "name": "Hoboken, New Jersey",
+      "venues": [
+        {
+          "name": "River Street Garage",
+          "address": "80 River St, Hoboken, NJ 07030, USA",
+          "calendarUrl": "https://riverstreetgarage.com/"
+        },
+        {
+          "name": "Willie McBride's",
+          "address": "616 Grand St, Hoboken, NJ 07030, USA",
+          "calendarUrl": "https://hoboken.williemcbrides.com/calendar"
+        },
+        {
+          "name": "Finnegan's Pub",
+          "address": "734 Willow Ave, Hoboken, NJ 07030, USA",
+          "calendarUrl": "https://www.finneganshoboken.com/music"
+        }
+      ]
+    }
+  ],
+  "sampleEvents": [
+    {
+      "venue": "River Street Garage",
+      "artist": "Gab Cinque Band",
+      "date": "2026-11-20",
+      "sourceUrl": "https://riverstreetgarage.com/"
+    },
+    {
+      "venue": "Willie McBride's",
+      "artist": "Party Til Dawn",
+      "date": "2026-11-20",
+      "time": "22:00",
+      "sourceUrl": "https://hoboken.williemcbrides.com/calendar"
+    },
+    {
+      "venue": "Willie McBride's",
+      "artist": "Sky City Social",
+      "date": "2026-11-21",
+      "time": "22:00",
+      "sourceUrl": "https://hoboken.williemcbrides.com/calendar"
+    }
+  ],
+  "status": "venue shortlist and source-linked samples; no automatic sync or ticket verification"
+}
