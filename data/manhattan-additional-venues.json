@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "region": "Manhattan, New York, USA",
+  "selection": "Additional active live-music venues for Coolet Music; venue discovery only, calendars not integrated",
+  "venues": [
+    {
+      "name": "Arlene's Grocery",
+      "neighborhood": "Lower East Side",
+      "address": "95 Stanton St, New York, NY 10002, USA",
+      "focus": "indie rock, punk"
+    },
+    {
+      "name": "Pianos",
+      "neighborhood": "Lower East Side",
+      "address": "158 Ludlow St, New York, NY 10002, USA",
+      "focus": "indie bands, DJ nights"
+    },
+    {
+      "name": "The Delancey",
+      "neighborhood": "Lower East Side",
+      "address": "168 Delancey St, New York, NY 10002, USA",
+      "focus": "live bands and DJs"
+    },
+    {
+      "name": "(Le) Poisson Rouge",
+      "neighborhood": "Greenwich Village",
+      "address": "158 Bleecker St, New York, NY 10012, USA",
+      "focus": "experimental, alternative, jazz"
+    },
+    {
+      "name": "Groove",
+      "neighborhood": "Greenwich Village",
+      "address": "125 MacDougal St, New York, NY 10012, USA",
+      "focus": "funk, soul, live bands"
+    },
+    {
+      "name": "Irving Plaza",
+      "neighborhood": "Union Square",
+      "address": "17 Irving Pl, New York, NY 10003, USA",
+      "focus": "touring rock and alternative acts"
+    }
+  ],
+  "status": {
+    "addedToSeed": true,
+    "calendarSync": false,
+    "ticketLinksVerified": false
+  }
+}
