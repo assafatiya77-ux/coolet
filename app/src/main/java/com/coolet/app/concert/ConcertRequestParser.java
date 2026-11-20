@@ -3,9 +3,8 @@ package com.coolet.app.concert;
 import java.util.Locale;
 
 /**
- * First offline building block for Coolet's concert agent.
- * Extracts city and genre from a spoken or typed request without network access.
- * Dates, ticket availability, prices and checkout are NOT inferred or verified here.
+ * Offline intent extraction for Coolet concert discovery.
+ * Does not claim live events, ticket availability, prices, or booking.
  */
 public final class ConcertRequestParser {
     private ConcertRequestParser() {}
@@ -34,11 +33,29 @@ public final class ConcertRequestParser {
         else if (containsAny(q, "תל אביב", "תל-אביב", "tel aviv", "tel-aviv")) city = "Tel Aviv";
 
         String genre = null;
-        if (containsAny(q, "בלוז", "blues")) genre = "blues";
+        // More specific subgenres must precede their parent genre.
+        if (containsAny(q, "אנדרגראונד היפ הופ", "אנדרגראונד היפ-הופ",
+                "היפ הופ מחתרתי", "היפ-הופ מחתרתי",
+                "underground hip-hop", "underground hip hop", "underground rap"))
+            genre = "underground hip-hop";
+        else if (containsAny(q, "בום באפ", "boom bap", "boom-bap"))
+            genre = "boom bap";
+        else if (containsAny(q, "ג'אז ראפ", "ג׳אז ראפ", "jazz rap", "jazz-rap"))
+            genre = "jazz rap";
+        else if (containsAny(q, "אלטרנטיב היפ הופ", "alternative hip-hop", "alternative hip hop"))
+            genre = "alternative hip-hop";
+        else if (containsAny(q, "ראפ באטל", "rap battle", "rap battles"))
+            genre = "rap battle";
+        else if (containsAny(q, "היפ הופ", "היפ-הופ", "hip-hop", "hip hop", "ראפ", " rap"))
+            genre = "hip-hop";
+        else if (containsAny(q, "בלוז", "blues")) genre = "blues";
         else if (containsAny(q, "ג'אז", "ג׳אז", "jazz")) genre = "jazz";
-        else if (containsAny(q, "רוק", "rock")) genre = "rock";
+        else if (containsAny(q, "פאנק רוק", "punk rock", "פאנק-רוק", "punk", "פאנק מחתרתי"))
+            genre = "punk";
         else if (containsAny(q, "פאנק", "funk")) genre = "funk";
+        else if (containsAny(q, "טכנו", "techno")) genre = "techno";
         else if (containsAny(q, "קאנטרי", "country")) genre = "country";
+        else if (containsAny(q, "רוק", "rock")) genre = "rock";
         return new Request(original, city, genre);
     }
 
