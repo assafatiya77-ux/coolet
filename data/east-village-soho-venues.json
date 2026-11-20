@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "city": "New York",
+  "areas": [
+    {
+      "name": "East Village",
+      "venues": [
+        {
+          "name": "Webster Hall",
+          "address": "125 E 11th St, New York, NY 10003, USA",
+          "calendar": "https://www.bowerypresents.com/webster-hall/"
+        },
+        {
+          "name": "DROM",
+          "address": "85 Avenue A, New York, NY 10009, USA"
+        },
+        {
+          "name": "Nublu",
+          "address": "151 Avenue C, New York, NY 10009, USA"
+        },
+        {
+          "name": "Bowery Palace",
+          "address": "327 Bowery, New York, NY 10003, USA",
+          "calendar": "https://www.bowerypalace.com/"
+        },
+        {
+          "name": "Night Club 101",
+          "address": "101 Avenue A, New York, NY 10009, USA"
+        }
+      ]
+    },
+    {
+      "name": "SoHo / border",
+      "venues": [
+        {
+          "name": "Club Room at Soho Grand",
+          "address": "310 W Broadway, New York, NY 10013, USA"
+        },
+        {
+          "name": "Soho Live",
+          "address": "96 B Lafayette St, New York, NY 10013, USA"
+        },
+        {
+          "name": "The Django (SoHo/TriBeCa border)",
+          "address": "2 6th Ave, New York, NY 10013, USA"
+        }
+      ]
+    }
+  ],
+  "notes": "Venue shortlist only. Calendar feeds and ticket links not yet integrated; check each venue before publication."
+}
