@@ -1,6 +1,7 @@
 package com.coolet.app;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.graphics.Color;
 import android.view.Gravity;
@@ -44,6 +45,11 @@ public class MainActivity extends Activity {
                 "Video library coming soon",
                 Toast.LENGTH_SHORT).show()
         );
+
+        Button live = new Button(this);
+        live.setText("Explore Coolet Live");
+        layout.addView(live);
+        live.setOnClickListener(v -> startActivity(new Intent(this, LiveActivity.class)));
 
         setContentView(layout);
     }
